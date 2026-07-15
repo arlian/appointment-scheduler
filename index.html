@@ -32,19 +32,6 @@
   h1 { font-size: 1.3rem; margin: 0; letter-spacing: -.01em; }
   .subtitle { color: var(--muted); margin: 2px 0 0; font-size: .85rem; }
 
-  /* ---- Tombol install ---- */
-  .install-btn {
-    display: block; width: 100%; margin-bottom: 18px; padding: 13px;
-    font-size: .92rem; font-weight: 700; font-family: inherit; cursor: pointer;
-    color: var(--accent-deep); background: var(--accent-soft);
-    border: 1.5px dashed var(--accent); border-radius: 14px;
-  }
-  .install-btn:active { transform: scale(.985); }
-  .ios-hint {
-    margin-bottom: 18px; padding: 12px 16px; font-size: .84rem;
-    color: var(--accent-deep); background: var(--accent-soft); border-radius: 14px;
-  }
-
   /* ---- Kartu ---- */
   .card {
     background: var(--card); border-radius: 20px; padding: 20px;
@@ -179,11 +166,6 @@
       <p class="subtitle">Ketik nama customer — customer lama terdeteksi otomatis.</p>
     </div>
   </header>
-
-  <button type="button" class="install-btn" id="installBtn" hidden>📲 Install Aplikasi ke Home Screen</button>
-  <div class="ios-hint" id="iosHint" hidden>
-    Untuk memasang di iPhone: ketuk tombol <strong>Bagikan</strong> (kotak dengan panah ke atas) lalu pilih <strong>"Tambahkan ke Layar Utama"</strong>.
-  </div>
 
   <section class="card">
     <div class="card-head">
@@ -537,30 +519,6 @@ if (new URLSearchParams(location.search).get('action') === 'add') {
   nameInput.focus();
   nameInput.scrollIntoView({ block: 'center' });
 }
-
-// ---- Tombol install ----
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  $('installBtn').hidden = false;
-});
-$('installBtn').addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  $('installBtn').hidden = true;
-});
-window.addEventListener('appinstalled', () => {
-  $('installBtn').hidden = true;
-  toast('Aplikasi terpasang! Cek home screen HP Anda.');
-});
-
-// Petunjuk khusus iPhone/iPad (Safari tidak punya prompt install)
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-if (isIOS && !isStandalone) $('iosHint').hidden = false;
 </script>
 </body>
 </html>
