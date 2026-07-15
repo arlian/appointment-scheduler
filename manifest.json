@@ -3,6 +3,7 @@
   "short_name": "Jadwal",
   "description": "Manajemen penjadwalan customer untuk treatment",
   "lang": "id",
+  "id": "./",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f6f8f7",
