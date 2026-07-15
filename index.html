@@ -141,6 +141,16 @@
   .appt button:active { transform: scale(.95); }
   .empty { color: var(--muted); font-size: .88rem; padding: 18px 0; text-align: center; }
 
+  /* ---- Export / Import ---- */
+  .data-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .data-btn {
+    padding: 12px; font-size: .86rem; font-weight: 600; font-family: inherit; cursor: pointer;
+    color: var(--muted); background: var(--card); border: 0; border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  .data-btn:hover { color: var(--accent-deep); }
+  .data-btn:active { transform: scale(.97); }
+
   /* ---- Toast ---- */
   .toast {
     position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(6px);
@@ -211,6 +221,12 @@
       </div>
       <div id="list"></div>
     </section>
+
+    <div class="data-row">
+      <button type="button" class="data-btn" id="exportBtn">⬇️ Export Data</button>
+      <button type="button" class="data-btn" id="importBtn">⬆️ Import Data</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -510,6 +526,62 @@ $('waBtn').addEventListener('click', async () => {
 
 $('date').value = new Date().toLocaleDateString('sv-SE'); // hari ini, format YYYY-MM-DD
 renderList();
+
+// ---- Export & Import data ----
+$('exportBtn').addEventListener('click', () => {
+  if (!customers.length && !appointments.length) { toast('Belum ada data untuk di-export.', true); return; }
+  const payload = {
+    app: 'jadwal-treatment', version: 1, exportedAt: new Date().toISOString(),
+    customers, appointments,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jadwal-treatment-' + today() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Data ter-export sebagai file JSON.');
+});
+
+$('importBtn').addEventListener('click', () => $('importFile').click());
+$('importFile').addEventListener('change', async () => {
+  const file = $('importFile').files[0];
+  $('importFile').value = '';
+  if (!file) return;
+  let data;
+  try { data = JSON.parse(await file.text()); }
+  catch { toast('File tidak bisa dibaca — bukan JSON valid.', true); return; }
+  if (!Array.isArray(data.customers) || !Array.isArray(data.appointments)) {
+    toast('Format file tidak dikenali.', true); return;
+  }
+
+  // Gabungkan: customer dicocokkan berdasarkan nama, jadwal duplikat dilewati
+  let newCust = 0, newAppt = 0;
+  const idMap = new Map(); // id di file -> id di penyimpanan ini
+  data.customers.forEach((c) => {
+    if (!c || typeof c.name !== 'string' || !c.name.trim()) return;
+    const name = c.name.trim().replace(/\s+/g, ' ');
+    let existing = findCustomerByName(name);
+    if (!existing) {
+      existing = { id: nextId(customers), name };
+      customers.push(existing);
+      newCust++;
+    }
+    idMap.set(c.id, existing.id);
+  });
+  data.appointments.forEach((a) => {
+    if (!a || !idMap.has(a.customerId)) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '') || !/^\d{2}:\d{2}$/.test(a.time || '')) return;
+    const cid = idMap.get(a.customerId);
+    if (appointments.some((x) => x.customerId === cid && x.date === a.date && x.time === a.time)) return;
+    appointments.push({ id: nextId(appointments), customerId: cid, date: a.date, time: a.time });
+    newAppt++;
+  });
+  save(KEY_CUSTOMERS, customers);
+  save(KEY_APPOINTMENTS, appointments);
+  renderList();
+  toast('Import selesai: ' + newCust + ' customer baru, ' + newAppt + ' jadwal ditambahkan.');
+});
 
 // ---- PWA: service worker & shortcut "Tambah Jadwal" ----
 if ('serviceWorker' in navigator) {
