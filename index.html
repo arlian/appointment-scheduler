@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jadwal Treatment</title>
+<meta name="theme-color" content="#0e9384">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f6f8f7; --card: #ffffff; --text: #1a2b26; --muted: #71847d;
+    --accent: #0e9384; --accent-deep: #0b6e63; --accent-soft: #e7f4f1;
+    --border: #e8edeb; --field: #f2f5f4; --red: #d5504c; --red-soft: #fbeeed;
+    --shadow: 0 1px 2px rgba(23,43,38,.04), 0 10px 30px rgba(23,43,38,.06);
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.45;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 28px 16px 72px; }
+
+  /* ---- Header ---- */
+  .top { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+  .logo {
+    width: 48px; height: 48px; flex: none; display: grid; place-items: center;
+    font-size: 24px; background: var(--accent-soft); border-radius: 14px;
+  }
+  h1 { font-size: 1.3rem; margin: 0; letter-spacing: -.01em; }
+  .subtitle { color: var(--muted); margin: 2px 0 0; font-size: .85rem; }
+
+  /* ---- Kartu ---- */
+  .card {
+    background: var(--card); border-radius: 20px; padding: 20px;
+    box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .card h2 { font-size: 1rem; margin: 0; letter-spacing: -.01em; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .wa-btn {
+    padding: 8px 14px; font-size: .82rem; font-weight: 600;
+    color: var(--accent-deep); background: var(--accent-soft); border: 0;
+    border-radius: 999px; cursor: pointer; white-space: nowrap;
+  }
+  .wa-btn:active { transform: scale(.97); }
+  .wa-btn:hover { filter: brightness(.97); }
+
+  /* ---- Filter ---- */
+  .filter-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip {
+    padding: 8px 15px; font-size: .84rem; font-weight: 600; cursor: pointer;
+    color: var(--muted); background: var(--field); border: 0; border-radius: 999px;
+    transition: background .15s, color .15s;
+  }
+  .chip.active { color: #fff; background: var(--accent); }
+  .filter-bar input[type="date"] {
+    width: auto; padding: 7px 12px; font-size: .82rem; border: 0;
+    border-radius: 999px; background: var(--field); color: var(--muted); font-family: inherit;
+  }
+  .filter-bar input[type="date"].active {
+    outline: 2px solid var(--accent); outline-offset: -2px;
+    color: var(--text); background: var(--card);
+  }
+  .range-sep { font-size: .78rem; color: var(--muted); }
+
+  /* ---- Form ---- */
+  label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin: 14px 0 6px; }
+  form label:first-child { margin-top: 0; }
+  input {
+    width: 100%; padding: 13px 14px; font-size: 16px; font-family: inherit;
+    border: 1.5px solid transparent; border-radius: 13px;
+    background: var(--field); color: var(--text); transition: background .15s, border-color .15s;
+  }
+  input:focus { outline: none; border-color: var(--accent); background: var(--card); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  button.primary {
+    margin-top: 20px; width: 100%; padding: 14px; font-size: 1rem; font-weight: 700;
+    font-family: inherit; color: #fff; background: var(--accent); border: 0;
+    border-radius: 13px; cursor: pointer; box-shadow: 0 6px 16px rgba(14,147,132,.28);
+  }
+  button.primary:hover { background: var(--accent-deep); }
+  button.primary:active { transform: scale(.985); }
+
+  /* ---- Autocomplete ---- */
+  .name-box { position: relative; }
+  .suggestions {
+    position: absolute; z-index: 10; left: 0; right: 0; top: 100%; margin-top: 6px;
+    background: var(--card); border-radius: 14px;
+    box-shadow: 0 12px 36px rgba(23,43,38,.16); overflow: hidden; display: none;
+  }
+  .suggestions.open { display: block; }
+  .suggestions div {
+    padding: 12px 15px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px;
+    font-size: .95rem;
+  }
+  .suggestions div:hover, .suggestions div.active { background: var(--accent-soft); }
+  .suggestions .meta { color: var(--muted); font-size: .78rem; white-space: nowrap; align-self: center; }
+
+  /* ---- Badge deteksi & riwayat ---- */
+  .badge {
+    display: none; margin-top: 10px; padding: 10px 14px; border-radius: 12px; font-size: .84rem;
+  }
+  .badge.known { display: block; background: var(--accent-soft); color: var(--accent-deep); }
+  .badge.new { display: block; background: var(--field); color: var(--muted); }
+
+  .history { margin-top: 4px; display: none; }
+  .history.show { display: block; }
+  .history h3 {
+    font-size: .72rem; color: var(--muted); margin: 12px 0 4px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  }
+  .history ul { margin: 0; padding: 0; list-style: none; font-size: .85rem; }
+  .history li { padding: 6px 0; border-bottom: 1px dashed var(--border); color: var(--muted); }
+  .history li:last-child { border-bottom: 0; }
+
+  /* ---- Daftar jadwal ---- */
+  .day-head {
+    font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: capitalize;
+    letter-spacing: .04em; margin: 18px 0 6px;
+  }
+  .day-head:first-child { margin-top: 0; }
+  .appt {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .appt:last-child { border-bottom: 0; }
+  .appt .when {
+    flex: none; min-width: 62px; text-align: center; padding: 9px 8px;
+    background: var(--accent-soft); border-radius: 11px;
+  }
+  .appt .when .t { font-weight: 700; font-size: .92rem; color: var(--accent-deep); }
+  .appt .who { flex: 1; min-width: 0; }
+  .appt .who .n { font-weight: 600; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .appt .who .v { font-size: .76rem; color: var(--muted); margin-top: 1px; }
+  .appt button {
+    flex: none; border: 0; background: var(--red-soft); color: var(--red); cursor: pointer;
+    font-size: .78rem; font-weight: 600; font-family: inherit; padding: 7px 12px; border-radius: 999px;
+  }
+  .appt button:active { transform: scale(.95); }
+  .empty { color: var(--muted); font-size: .88rem; padding: 18px 0; text-align: center; }
+
+  /* ---- Toast ---- */
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(6px);
+    background: var(--text); color: #fff; padding: 12px 20px; border-radius: 999px;
+    font-size: .88rem; opacity: 0; transition: opacity .25s, transform .25s;
+    pointer-events: none; max-width: calc(100vw - 32px); box-shadow: 0 10px 30px rgba(23,43,38,.25);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.err { background: var(--red); }
+
+  /* ---- Layar lebar: tetap satu kolom rapi di tengah ---- */
+  @media (min-width: 560px) {
+    .wrap { padding-top: 44px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="logo">💆</div>
+    <div>
+      <h1>Jadwal Treatment</h1>
+      <p class="subtitle">Ketik nama customer — customer lama terdeteksi otomatis.</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Tambah Jadwal</h2>
+    </div>
+    <form id="form" autocomplete="off">
+        <label for="name">Nama Customer</label>
+        <div class="name-box">
+          <input id="name" placeholder="mis. Siti Rahma" required>
+          <div class="suggestions" id="sug"></div>
+        </div>
+        <div class="badge" id="badge"></div>
+        <div class="history" id="history">
+          <h3>Riwayat kunjungan</h3>
+          <ul id="historyList"></ul>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="date">Tanggal</label>
+            <input id="date" type="date" required>
+          </div>
+          <div>
+            <label for="time">Jam</label>
+            <input id="time" type="time" required>
+          </div>
+        </div>
+        <button class="primary" type="submit">Simpan Jadwal</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Daftar Jadwal</h2>
+        <button type="button" class="wa-btn" id="waBtn" title="Salin jadwal yang tampil dalam format WhatsApp">📋 Salin untuk WA</button>
+      </div>
+      <div class="filter-bar">
+        <button type="button" class="chip active" data-f="today">Hari Ini</button>
+        <button type="button" class="chip" data-f="week">Minggu Ini</button>
+        <button type="button" class="chip" data-f="all">Semua</button>
+        <input type="date" id="filterStart" title="Dari tanggal">
+        <span class="range-sep">s.d.</span>
+        <input type="date" id="filterEnd" title="Sampai tanggal">
+      </div>
+      <div id="list"></div>
+    </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- Penyimpanan di localStorage ----
+const KEY_CUSTOMERS = 'jt_customers';     // [{id, name}]
+const KEY_APPOINTMENTS = 'jt_appointments'; // [{id, customerId, date, time}]
+
+function load(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || []; }
+  catch { return []; }
+}
+function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+let customers = load(KEY_CUSTOMERS);
+let appointments = load(KEY_APPOINTMENTS);
+const nextId = (arr) => arr.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+
+const visitCount = (customerId) =>
+  appointments.filter((a) => a.customerId === customerId).length;
+
+function findCustomerByName(name) {
+  const q = name.trim().toLowerCase();
+  return customers.find((c) => c.name.toLowerCase() === q) || null;
+}
+
+function searchCustomerList(q) {
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  return customers
+    .filter((c) => c.name.toLowerCase().includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name, 'id'))
+    .slice(0, 8)
+    .map((c) => ({ ...c, visits: visitCount(c.id) }));
+}
+
+// ---- Elemen & util tampilan ----
+const $ = (id) => document.getElementById(id);
+const nameInput = $('name'), sug = $('sug'), badge = $('badge');
+const historyBox = $('history'), historyList = $('historyList');
+let selectedCustomer = null; // {id, name, visits} jika cocok dengan customer lama
+let activeIdx = -1;
+
+const hariBulan = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('id-ID',
+  { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+function toast(msg, isErr) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ---- Autocomplete nama customer ----
+nameInput.addEventListener('input', () => {
+  selectedCustomer = null;
+  const q = nameInput.value.trim();
+  if (!q) { closeSug(); updateBadge(); return; }
+
+  // Deteksi otomatis: nama persis sama dengan customer lama
+  const exact = findCustomerByName(q);
+  if (exact) selectCustomer({ ...exact, visits: visitCount(exact.id) }, false);
+  else updateBadge();
+
+  renderSug(searchCustomerList(q).filter((r) => !exact || r.id !== exact.id));
+});
+
+function renderSug(rows) {
+  sug.innerHTML = '';
+  activeIdx = -1;
+  if (!rows.length) { closeSug(); return; }
+  rows.forEach((r) => {
+    const d = document.createElement('div');
+    d.innerHTML = '<span></span><span class="meta"></span>';
+    d.firstChild.textContent = r.name;
+    d.lastChild.textContent = r.visits + 'x kunjungan';
+    d.onmousedown = (e) => { e.preventDefault(); selectCustomer(r, true); };
+    sug.appendChild(d);
+  });
+  sug.classList.add('open');
+}
+
+function closeSug() { sug.classList.remove('open'); sug.innerHTML = ''; activeIdx = -1; }
+
+nameInput.addEventListener('keydown', (e) => {
+  const items = [...sug.children];
+  if (!items.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeIdx = (activeIdx + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items.forEach((el, i) => el.classList.toggle('active', i === activeIdx));
+  } else if (e.key === 'Enter' && activeIdx >= 0) {
+    e.preventDefault();
+    items[activeIdx].dispatchEvent(new MouseEvent('mousedown'));
+  } else if (e.key === 'Escape') closeSug();
+});
+nameInput.addEventListener('blur', () => setTimeout(closeSug, 120));
+
+function selectCustomer(c, fill) {
+  selectedCustomer = c;
+  if (fill) { nameInput.value = c.name; closeSug(); }
+  updateBadge();
+  showHistory(c.id);
+}
+
+function updateBadge() {
+  historyBox.classList.remove('show');
+  if (selectedCustomer) {
+    badge.className = 'badge known';
+    badge.textContent = '✓ Customer terdeteksi: ' + selectedCustomer.name +
+      ' (' + selectedCustomer.visits + 'x kunjungan)';
+  } else if (nameInput.value.trim().length >= 2) {
+    badge.className = 'badge new';
+    badge.textContent = 'Customer baru — akan otomatis tersimpan.';
+  } else {
+    badge.className = 'badge';
+  }
+}
+
+function showHistory(customerId) {
+  const rows = appointments
+    .filter((a) => a.customerId === customerId)
+    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+    .slice(0, 5);
+  if (!rows.length) return;
+  historyList.innerHTML = '';
+  rows.forEach((r) => {
+    const li = document.createElement('li');
+    li.textContent = hariBulan(r.date) + ' — ' + r.time;
+    historyList.appendChild(li);
+  });
+  historyBox.classList.add('show');
+}
+
+// ---- Simpan jadwal ----
+$('form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const cleanName = nameInput.value.trim().replace(/\s+/g, ' ');
+  const date = $('date').value, time = $('time').value;
+  if (!cleanName || !date || !time) { toast('Nama, tanggal, dan jam wajib diisi.', true); return; }
+
+  // Auto-deteksi: pakai customer lama jika nama sudah ada (abaikan besar/kecil huruf)
+  let customer = findCustomerByName(cleanName);
+  const isNew = !customer;
+  if (isNew) {
+    customer = { id: nextId(customers), name: cleanName };
+    customers.push(customer);
+    save(KEY_CUSTOMERS, customers);
+  }
+
+  const dup = appointments.find((a) =>
+    a.customerId === customer.id && a.date === date && a.time === time);
+  if (dup) { toast(customer.name + ' sudah punya jadwal di tanggal dan jam yang sama.', true); return; }
+
+  const newId = nextId(appointments);
+  appointments.push({ id: newId, customerId: customer.id, date, time });
+  save(KEY_APPOINTMENTS, appointments);
+
+  let msg = isNew
+    ? 'Jadwal tersimpan. ' + customer.name + ' terdaftar sebagai customer baru.'
+    : 'Jadwal tersimpan untuk ' + customer.name + ' (customer lama).';
+  if (!filteredRows().some((a) => a.id === newId)) {
+    msg += ' Pilih "Semua" untuk melihatnya.';
+  }
+  toast(msg);
+  nameInput.value = ''; $('time').value = '';
+  selectedCustomer = null;
+  updateBadge();
+  renderList();
+  nameInput.focus();
+});
+
+// ---- Filter daftar jadwal ----
+const today = () => new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+let filterMode = 'today'; // 'today' | 'week' | 'all' | 'date'
+
+function thisWeekRange() { // Senin s.d. Minggu pekan berjalan
+  const d = new Date();
+  const offset = (d.getDay() + 6) % 7; // 0 = Senin
+  const mon = new Date(d); mon.setDate(d.getDate() - offset);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const iso = (x) => x.toLocaleDateString('sv-SE');
+  return [iso(mon), iso(sun)];
+}
+
+function filteredRows() {
+  let rows = appointments.slice();
+  if (filterMode === 'today') {
+    rows = rows.filter((a) => a.date === today());
+  } else if (filterMode === 'week') {
+    const [mon, sun] = thisWeekRange();
+    rows = rows.filter((a) => a.date >= mon && a.date <= sun);
+  } else if (filterMode === 'date') {
+    const start = $('filterStart').value, end = $('filterEnd').value;
+    rows = rows.filter((a) => (!start || a.date >= start) && (!end || a.date <= end));
+  }
+  return rows.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
+function setFilter(mode) {
+  filterMode = mode;
+  document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.dataset.f === mode));
+  const active = mode === 'date';
+  $('filterStart').classList.toggle('active', active);
+  $('filterEnd').classList.toggle('active', active);
+  if (!active) { $('filterStart').value = ''; $('filterEnd').value = ''; }
+  renderList();
+}
+
+document.querySelectorAll('.chip').forEach((c) =>
+  c.addEventListener('click', () => setFilter(c.dataset.f)));
+['filterStart', 'filterEnd'].forEach((id) =>
+  $(id).addEventListener('change', () => {
+    if ($('filterStart').value || $('filterEnd').value) setFilter('date');
+    else setFilter('today');
+  }));
+
+// ---- Daftar jadwal ----
+function renderList() {
+  const list = $('list');
+  list.innerHTML = '';
+  const rows = filteredRows();
+  if (!rows.length) {
+    const msg = filterMode === 'today' ? 'Tidak ada jadwal hari ini.'
+      : filterMode === 'week' ? 'Tidak ada jadwal minggu ini.'
+      : filterMode === 'date' ? 'Tidak ada jadwal pada rentang tanggal tersebut.'
+      : 'Belum ada jadwal. Tambahkan lewat form di samping.';
+    list.innerHTML = '<div class="empty">' + msg + '</div>';
+    return;
+  }
+  const nameOf = (id) => (customers.find((c) => c.id === id) || { name: '?' }).name;
+  let lastDate = null;
+  rows.forEach((r) => {
+    if (r.date !== lastDate) {
+      const h = document.createElement('div');
+      h.className = 'day-head';
+      h.textContent = hariBulan(r.date);
+      list.appendChild(h);
+      lastDate = r.date;
+    }
+    const visits = visitCount(r.customerId);
+    const el = document.createElement('div');
+    el.className = 'appt';
+    el.innerHTML =
+      '<div class="when"><div class="t"></div></div>' +
+      '<div class="who"><div class="n"></div><div class="v"></div></div>' +
+      '<button title="Hapus jadwal">Hapus</button>';
+    el.querySelector('.t').textContent = r.time;
+    el.querySelector('.n').textContent = nameOf(r.customerId);
+    el.querySelector('.v').textContent = visits > 1 ? 'customer lama · ' + visits + 'x kunjungan' : 'customer baru';
+    el.querySelector('button').onclick = () => {
+      if (!confirm('Hapus jadwal ' + nameOf(r.customerId) + ' pada ' + hariBulan(r.date) + ' ' + r.time + '?')) return;
+      appointments = appointments.filter((a) => a.id !== r.id);
+      save(KEY_APPOINTMENTS, appointments);
+      toast('Jadwal dihapus.');
+      renderList();
+    };
+    list.appendChild(el);
+  });
+}
+
+// ---- Salin jadwal dalam format WhatsApp ----
+function buildWhatsAppText() {
+  const rows = filteredRows();
+  if (!rows.length) return null;
+  const nameOf = (id) => (customers.find((c) => c.id === id) || { name: '?' }).name;
+  let lines = ['*JADWAL TREATMENT* 💆'];
+  let lastDate = null;
+  rows.forEach((r) => {
+    if (r.date !== lastDate) {
+      lines.push('', '📅 *' + hariBulan(r.date) + '*');
+      lastDate = r.date;
+    }
+    lines.push('🕐 ' + r.time + ' — ' + nameOf(r.customerId));
+  });
+  return lines.join('\n');
+}
+
+$('waBtn').addEventListener('click', async () => {
+  const text = buildWhatsAppText();
+  if (!text) { toast('Belum ada jadwal untuk disalin.', true); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Fallback untuk browser/konteks tanpa Clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+  toast('Jadwal tersalin — tinggal paste di WhatsApp.');
+});
+
+$('date').value = new Date().toLocaleDateString('sv-SE'); // hari ini, format YYYY-MM-DD
+renderList();
+
+// ---- PWA: service worker & shortcut "Tambah Jadwal" ----
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+if (new URLSearchParams(location.search).get('action') === 'add') {
+  nameInput.focus();
+  nameInput.scrollIntoView({ block: 'center' });
+}
+</script>
+</body>
+</html>
