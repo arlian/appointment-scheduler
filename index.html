@@ -655,12 +655,15 @@ function buildWhatsAppText() {
   const nameOf = (id) => (customers.find((c) => c.id === id) || { name: '?' }).name;
   let lines = ['*JADWAL TREATMENT* 💆'];
   let lastDate = null;
+  let n = 0;
   rows.forEach((r) => {
     if (r.date !== lastDate) {
       lines.push('', '📅 *' + hariBulan(r.date) + '*');
       lastDate = r.date;
+      n = 0;
     }
-    lines.push('🕐 ' + r.time + ' — ' + nameOf(r.customerId));
+    n++;
+    lines.push(n + '. ' + r.time + ' — ' + nameOf(r.customerId));
   });
   return lines.join('\n');
 }
