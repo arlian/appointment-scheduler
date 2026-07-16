@@ -83,6 +83,16 @@
   }
   input:focus { outline: none; border-color: var(--accent); background: var(--card); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row2 > div { min-width: 0; }
+
+  /* iOS Safari: input tanggal/jam punya lebar bawaan yang bisa melebihi kolomnya */
+  input[type="date"], input[type="time"] {
+    -webkit-appearance: none; appearance: none; min-width: 0;
+  }
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left; min-height: 1.45em;
+  }
   button.primary {
     margin-top: 20px; width: 100%; padding: 14px; font-size: 1rem; font-weight: 700;
     font-family: inherit; color: #fff; background: var(--accent); border: 0;
