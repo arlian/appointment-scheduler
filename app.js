@@ -2,7 +2,8 @@
 // Penyimpanan (localStorage)
 // ============================================================
 const KEY_CUSTOMERS = 'jt_customers';       // [{id, name}]
-const KEY_APPOINTMENTS = 'jt_appointments'; // [{id, customerId, date, time}]
+const KEY_APPOINTMENTS = 'jt_appointments'; // [{id, customerId, date, time, done?, staff?}]
+const KEY_STAFF = 'jt_staff';               // ['Nama Pegawai', ...]
 
 function load(key) {
   try { return JSON.parse(localStorage.getItem(key)) || []; }
@@ -12,7 +13,18 @@ function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 
 let customers = load(KEY_CUSTOMERS);
 let appointments = load(KEY_APPOINTMENTS);
+let staff = load(KEY_STAFF);
 const nextId = (arr) => arr.reduce((m, x) => Math.max(m, x.id), 0) + 1;
+
+function addStaff(name) {
+  const q = name.trim().toLowerCase();
+  if (!q) return;
+  if (!staff.some((s) => s.toLowerCase() === q)) {
+    staff.push(name.trim());
+    staff.sort((a, b) => a.localeCompare(b, 'id'));
+    save(KEY_STAFF, staff);
+  }
+}
 
 const visitCount = (customerId) =>
   appointments.filter((a) => a.customerId === customerId).length;
@@ -294,7 +306,9 @@ $('editSheet').addEventListener('click', (e) => {
   if (e.target === $('editSheet')) closeEdit();
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !$('editSheet').hidden) closeEdit();
+  if (e.key !== 'Escape') return;
+  if (!$('editSheet').hidden) closeEdit();
+  if (!$('doneSheet').hidden) closeDone();
 });
 
 $('editSave').addEventListener('click', () => {
@@ -317,6 +331,75 @@ $('editSave').addEventListener('click', () => {
   closeEdit();
   renderList();
   toast('Jadwal berhasil diubah.');
+});
+
+// ============================================================
+// Tandai selesai (treatment sudah dilakukan + pegawai yang menangani)
+// ============================================================
+let doneId = null;
+
+function renderStaffChips() {
+  const box = $('staffChips');
+  box.innerHTML = '';
+  const current = $('staffInput').value.trim().toLowerCase();
+  staff.forEach((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'staff-chip' + (s.toLowerCase() === current ? ' active' : '');
+    b.textContent = s;
+    b.onclick = () => { $('staffInput').value = s; renderStaffChips(); };
+    box.appendChild(b);
+  });
+}
+
+$('staffInput').addEventListener('input', renderStaffChips);
+
+function openDone(apptId) {
+  const a = appointments.find((x) => x.id === apptId);
+  if (!a) return;
+  doneId = apptId;
+  $('doneName').textContent = nameOf(a.customerId) + ' — ' + hariBulan(a.date) + ' ' + a.time;
+  $('staffInput').value = a.staff || '';
+  $('doneUndo').hidden = !a.done;
+  renderStaffChips();
+  $('doneSheet').hidden = false;
+  // Fokus ke input hanya saat belum ada daftar pegawai (pertama kali harus ketik manual);
+  // selebihnya cukup tap chip tanpa keyboard muncul.
+  if (!a.done && !staff.length) $('staffInput').focus();
+}
+
+function closeDone() {
+  doneId = null;
+  $('doneSheet').hidden = true;
+}
+
+$('doneCancel').addEventListener('click', closeDone);
+$('doneSheet').addEventListener('click', (e) => {
+  if (e.target === $('doneSheet')) closeDone();
+});
+
+$('doneSave').addEventListener('click', () => {
+  const a = appointments.find((x) => x.id === doneId);
+  if (!a) { closeDone(); return; }
+  const name = $('staffInput').value.trim().replace(/\s+/g, ' ');
+  a.done = true;
+  if (name) { a.staff = name; addStaff(name); }
+  else delete a.staff;
+  save(KEY_APPOINTMENTS, appointments);
+  closeDone();
+  renderList();
+  toast(name ? 'Ditandai selesai — oleh ' + name + '.' : 'Ditandai selesai.');
+});
+
+$('doneUndo').addEventListener('click', () => {
+  const a = appointments.find((x) => x.id === doneId);
+  if (!a) { closeDone(); return; }
+  delete a.done;
+  delete a.staff;
+  save(KEY_APPOINTMENTS, appointments);
+  closeDone();
+  renderList();
+  toast('Tanda selesai dibatalkan.');
 });
 
 // ============================================================
@@ -365,11 +448,20 @@ function renderList() {
         updateSelectBar();
       };
     } else {
+      if (r.done) el.classList.add('done');
       el.innerHTML =
+        '<button class="chk" title="Tandai treatment selesai">✓</button>' +
         '<div class="when"><div class="t"></div></div>' +
         '<div class="who"><div class="n"></div><div class="v"></div></div>' +
         '<button class="edit" title="Ubah jadwal">Ubah</button>' +
         '<button class="del" title="Hapus jadwal">Hapus</button>';
+      if (r.done) {
+        const d = document.createElement('div');
+        d.className = 'd';
+        d.textContent = '✓ Selesai' + (r.staff ? ' · ' + r.staff : '');
+        el.querySelector('.who').appendChild(d);
+      }
+      el.querySelector('.chk').onclick = () => openDone(r.id);
       el.querySelector('.edit').onclick = () => openEdit(r.id);
       el.querySelector('.del').onclick = () => {
         if (!confirm('Hapus jadwal ' + nameOf(r.customerId) + ' pada ' + hariBulan(r.date) + ' ' + r.time + '?')) return;
@@ -402,7 +494,9 @@ function buildWhatsAppText() {
       n = 0;
     }
     n++;
-    lines.push(n + '. ' + r.time + ' — ' + nameOf(r.customerId));
+    let line = n + '. ' + r.time + ' — ' + nameOf(r.customerId);
+    if (r.done) line += ' ✅' + (r.staff ? ' (' + r.staff + ')' : '');
+    lines.push(line);
   });
   return lines.join('\n');
 }
@@ -431,8 +525,8 @@ $('waBtn').addEventListener('click', async () => {
 $('exportBtn').addEventListener('click', () => {
   if (!customers.length && !appointments.length) { toast('Belum ada data untuk di-export.', true); return; }
   const payload = {
-    app: 'jadwal-treatment', version: 1, exportedAt: new Date().toISOString(),
-    customers, appointments,
+    app: 'jadwal-treatment', version: 2, exportedAt: new Date().toISOString(),
+    customers, appointments, staff,
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -474,9 +568,18 @@ $('importFile').addEventListener('change', async () => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(a.date || '') || !/^\d{2}:\d{2}$/.test(a.time || '')) return;
     const cid = idMap.get(a.customerId);
     if (appointments.some((x) => x.customerId === cid && x.date === a.date && x.time === a.time)) return;
-    appointments.push({ id: nextId(appointments), customerId: cid, date: a.date, time: a.time });
+    const appt = { id: nextId(appointments), customerId: cid, date: a.date, time: a.time };
+    if (a.done === true) appt.done = true;
+    if (typeof a.staff === 'string' && a.staff.trim()) {
+      appt.staff = a.staff.trim().replace(/\s+/g, ' ');
+      addStaff(appt.staff);
+    }
+    appointments.push(appt);
     newAppt++;
   });
+  if (Array.isArray(data.staff)) {
+    data.staff.forEach((s) => { if (typeof s === 'string') addStaff(s); });
+  }
   save(KEY_CUSTOMERS, customers);
   save(KEY_APPOINTMENTS, appointments);
   renderList();

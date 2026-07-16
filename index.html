@@ -150,6 +150,30 @@
   .appt button.del { background: var(--red-soft); color: var(--red); }
   .appt button:active { transform: scale(.95); }
 
+  /* ---- Tanda selesai ---- */
+  .appt button.chk {
+    width: 26px; height: 26px; padding: 0; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--card); color: transparent;
+    font-size: 13px; display: grid; place-items: center;
+  }
+  .appt.done button.chk { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .appt .who .d { font-size: .76rem; color: var(--accent-deep); font-weight: 600; margin-top: 1px; }
+  .undo-done {
+    margin-top: 12px; width: 100%; padding: 12px; font-size: .88rem; font-weight: 600;
+    font-family: inherit; color: var(--red); background: var(--red-soft);
+    border: 0; border-radius: 13px; cursor: pointer;
+  }
+  .undo-done:active { transform: scale(.985); }
+  .staff-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .staff-chips:empty { display: none; }
+  .staff-chip {
+    padding: 8px 14px; font-size: .84rem; font-weight: 600; cursor: pointer;
+    color: var(--muted); background: var(--field); border: 0; border-radius: 999px;
+    font-family: inherit;
+  }
+  .staff-chip.active { color: #fff; background: var(--accent); }
+  .staff-chip:active { transform: scale(.96); }
+
   /* ---- Mode pilih (hapus banyak) ---- */
   .appt.selectable { cursor: pointer; border-radius: 12px; padding-left: 4px; padding-right: 4px; }
   .appt.selectable:active { background: var(--field); }
@@ -320,6 +344,20 @@
       <button type="button" class="ghost" id="editCancel">Batal</button>
       <button type="button" class="primary" id="editSave">Simpan</button>
     </div>
+  </div>
+</div>
+<div class="sheet-backdrop" id="doneSheet" hidden>
+  <div class="sheet">
+    <h2>Tandai Selesai</h2>
+    <div class="sheet-name" id="doneName"></div>
+    <label for="staffInput">Pegawai yang melakukan treatment</label>
+    <input id="staffInput" placeholder="mis. Rina" autocomplete="off">
+    <div class="staff-chips" id="staffChips"></div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="doneCancel">Batal</button>
+      <button type="button" class="primary" id="doneSave">Simpan</button>
+    </div>
+    <button type="button" class="undo-done" id="doneUndo" hidden>Batalkan tanda selesai</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
