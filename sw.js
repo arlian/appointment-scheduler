@@ -1,6 +1,6 @@
 // Service worker: utamakan jaringan, cadangkan cache agar tetap bisa dibuka offline.
-const CACHE = 'jadwal-treatment-v2';
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'jadwal-treatment-v3';
+const ASSETS = ['./', './index.html', './app.js', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
