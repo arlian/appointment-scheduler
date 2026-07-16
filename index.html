@@ -129,11 +129,17 @@
     letter-spacing: .04em; margin: 18px 0 6px;
   }
   .day-head:first-child { margin-top: 0; }
-  .appt {
-    display: flex; align-items: center; gap: 12px; padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-  }
+  .appt { position: relative; overflow: hidden; border-bottom: 1px solid var(--border); }
   .appt:last-child { border-bottom: 0; }
+  .appt-main {
+    position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 0;
+    background: var(--card); transition: transform .18s ease;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
+  .appt-bg {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 18px; background: var(--red); color: #fff; font-size: .82rem; font-weight: 700;
+  }
   .appt .when {
     flex: none; min-width: 62px; text-align: center; padding: 9px 8px;
     background: var(--accent-soft); border-radius: 11px;
@@ -175,9 +181,11 @@
   .staff-chip:active { transform: scale(.96); }
 
   /* ---- Mode pilih (hapus banyak) ---- */
-  .appt.selectable { cursor: pointer; border-radius: 12px; padding-left: 4px; padding-right: 4px; }
-  .appt.selectable:active { background: var(--field); }
-  .appt.selected { background: var(--accent-soft); border-bottom-color: transparent; }
+  .appt.selectable { cursor: pointer; }
+  .appt.selectable .appt-main { border-radius: 12px; padding-left: 4px; padding-right: 4px; }
+  .appt.selectable:active .appt-main { background: var(--field); }
+  .appt.selected { border-bottom-color: transparent; }
+  .appt.selected .appt-main { background: var(--accent-soft); }
   .check {
     flex: none; width: 24px; height: 24px; border-radius: 50%;
     border: 2px solid var(--border); display: grid; place-items: center;
@@ -253,6 +261,13 @@
   @media (min-width: 560px) {
     .wrap { padding-top: 44px; }
   }
+
+  /* ---- Layar sentuh: tombol diganti gestur biar nama tidak terpotong ---- */
+  .gesture-hint { display: none; font-size: .75rem; color: var(--muted); margin: 0 0 10px; }
+  @media (pointer: coarse) {
+    .gesture-hint { display: block; }
+    .appt button.edit, .appt button.del { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -310,6 +325,7 @@
         <span class="range-sep">s.d.</span>
         <input type="date" id="filterEnd" title="Sampai tanggal">
       </div>
+      <p class="gesture-hint">Geser kiri untuk hapus · tekan lama untuk ubah jadwal</p>
       <div id="list"></div>
     </section>
 

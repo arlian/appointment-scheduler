@@ -435,13 +435,16 @@ function renderList() {
     const visits = visitCount(r.customerId);
     const el = document.createElement('div');
     el.className = 'appt';
+    const main = document.createElement('div');
+    main.className = 'appt-main';
     if (selectMode) {
       el.classList.add('selectable');
       if (selected.has(r.id)) el.classList.add('selected');
-      el.innerHTML =
+      main.innerHTML =
         '<span class="check">✓</span>' +
         '<div class="when"><div class="t"></div></div>' +
         '<div class="who"><div class="n"></div><div class="v"></div></div>';
+      el.appendChild(main);
       el.onclick = () => {
         if (selected.has(r.id)) selected.delete(r.id); else selected.add(r.id);
         el.classList.toggle('selected', selected.has(r.id));
@@ -449,12 +452,17 @@ function renderList() {
       };
     } else {
       if (r.done) el.classList.add('done');
-      el.innerHTML =
+      const bg = document.createElement('div');
+      bg.className = 'appt-bg';
+      bg.textContent = 'Hapus';
+      el.appendChild(bg);
+      main.innerHTML =
         '<button class="chk" title="Tandai treatment selesai">✓</button>' +
         '<div class="when"><div class="t"></div></div>' +
         '<div class="who"><div class="n"></div><div class="v"></div></div>' +
         '<button class="edit" title="Ubah jadwal">Ubah</button>' +
         '<button class="del" title="Hapus jadwal">Hapus</button>';
+      el.appendChild(main);
       if (r.done) {
         const d = document.createElement('div');
         d.className = 'd';
@@ -463,18 +471,73 @@ function renderList() {
       }
       el.querySelector('.chk').onclick = () => openDone(r.id);
       el.querySelector('.edit').onclick = () => openEdit(r.id);
-      el.querySelector('.del').onclick = () => {
-        if (!confirm('Hapus jadwal ' + nameOf(r.customerId) + ' pada ' + hariBulan(r.date) + ' ' + r.time + '?')) return;
-        appointments = appointments.filter((a) => a.id !== r.id);
-        save(KEY_APPOINTMENTS, appointments);
-        toast('Jadwal dihapus.');
-        renderList();
-      };
+      el.querySelector('.del').onclick = () => confirmDelete(r);
+      attachRowGestures(main, r);
     }
     el.querySelector('.t').textContent = r.time;
     el.querySelector('.n').textContent = nameOf(r.customerId);
     el.querySelector('.v').textContent = visits > 1 ? 'customer lama · ' + visits + 'x kunjungan' : 'customer baru';
     list.appendChild(el);
+  });
+}
+
+function confirmDelete(r) {
+  if (!confirm('Hapus jadwal ' + nameOf(r.customerId) + ' pada ' + hariBulan(r.date) + ' ' + r.time + '?')) return;
+  appointments = appointments.filter((a) => a.id !== r.id);
+  save(KEY_APPOINTMENTS, appointments);
+  toast('Jadwal dihapus.');
+  renderList();
+}
+
+// Gestur layar sentuh: geser kiri untuk hapus, tekan lama untuk ubah jadwal
+function attachRowGestures(main, r) {
+  let startX = 0, startY = 0, dx = 0;
+  let mode = null; // null = belum tahu | 'swipe' | 'cancel' (scroll vertikal / long-press terpakai)
+  let pressTimer = null;
+
+  const clearPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+  const reset = () => {
+    clearPress();
+    main.style.transition = '';
+    main.style.transform = '';
+    mode = null;
+  };
+
+  main.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    startX = t.clientX; startY = t.clientY; dx = 0; mode = null;
+    if (!e.target.closest('button')) {
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        mode = 'cancel';
+        if (navigator.vibrate) navigator.vibrate(15);
+        openEdit(r.id);
+      }, 500);
+    }
+  }, { passive: true });
+
+  main.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    const mx = t.clientX - startX, my = t.clientY - startY;
+    if (Math.abs(mx) > 10 || Math.abs(my) > 10) clearPress();
+    if (mode === null) {
+      if (mx < -10 && Math.abs(mx) > Math.abs(my)) mode = 'swipe';
+      else if (Math.abs(my) > 10) mode = 'cancel';
+    }
+    if (mode !== 'swipe') return;
+    dx = Math.min(0, mx);
+    main.style.transition = 'none';
+    main.style.transform = 'translateX(' + dx + 'px)';
+  }, { passive: true });
+
+  main.addEventListener('touchend', () => {
+    const wasSwipe = mode === 'swipe' && dx < -70;
+    reset();
+    if (wasSwipe) confirmDelete(r);
+  });
+  main.addEventListener('touchcancel', reset);
+  main.addEventListener('contextmenu', (e) => {
+    if (matchMedia('(pointer: coarse)').matches) e.preventDefault();
   });
 }
 
