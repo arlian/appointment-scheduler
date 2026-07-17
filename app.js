@@ -198,7 +198,7 @@ $('form').addEventListener('submit', (e) => {
 // ============================================================
 // Filter daftar jadwal
 // ============================================================
-let filterMode = 'today'; // 'today' | 'yesterday' | 'tomorrow' | 'day' | 'week' | 'all' | 'date'
+let filterMode = 'today'; // 'today' | 'pastweek' | 'nextweek' | 'day' | 'week' | 'all' | 'date'
 
 function thisWeekRange() { // Senin s.d. Minggu pekan berjalan
   const d = new Date();
@@ -213,10 +213,12 @@ function filteredRows() {
   let rows = appointments.slice();
   if (filterMode === 'today') {
     rows = rows.filter((a) => a.date === today());
-  } else if (filterMode === 'yesterday') {
-    rows = rows.filter((a) => a.date === hariGeser(-1));
-  } else if (filterMode === 'tomorrow') {
-    rows = rows.filter((a) => a.date === hariGeser(1));
+  } else if (filterMode === 'pastweek') { // 7 hari terakhir, termasuk hari ini
+    const start = hariGeser(-7);
+    rows = rows.filter((a) => a.date >= start && a.date <= today());
+  } else if (filterMode === 'nextweek') { // hari ini s.d. 7 hari ke depan
+    const end = hariGeser(7);
+    rows = rows.filter((a) => a.date >= today() && a.date <= end);
   } else if (filterMode === 'day') {
     rows = rows.filter((a) => a.date === $('filterDate').value);
   } else if (filterMode === 'week') {
@@ -447,8 +449,8 @@ function renderList() {
   }
   if (!rows.length) {
     const msg = filterMode === 'today' ? 'Tidak ada jadwal hari ini.'
-      : filterMode === 'yesterday' ? 'Tidak ada jadwal kemarin.'
-      : filterMode === 'tomorrow' ? 'Tidak ada jadwal besok.'
+      : filterMode === 'pastweek' ? 'Tidak ada jadwal seminggu ke belakang.'
+      : filterMode === 'nextweek' ? 'Tidak ada jadwal seminggu ke depan.'
       : filterMode === 'day' ? 'Tidak ada jadwal pada tanggal tersebut.'
       : filterMode === 'week' ? 'Tidak ada jadwal minggu ini.'
       : filterMode === 'date' ? 'Tidak ada jadwal pada rentang tanggal tersebut.'
