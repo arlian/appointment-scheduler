@@ -3,6 +3,8 @@
 Sistem manajemen penjadwalan customer untuk treatment, dengan auto-deteksi nama
 customer yang sudah pernah terdaftar.
 
+**Buka aplikasinya:** https://arlian.github.io/appointment-scheduler/
+
 ## Cara menjalankan
 
 ```bash
