@@ -56,6 +56,12 @@ let activeIdx = -1;
 const hariBulan = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('id-ID',
   { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const today = () => new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+const hariGeser = (n) => { // n hari dari hari ini, format YYYY-MM-DD
+  const d = new Date(); d.setDate(d.getDate() + n);
+  return d.toLocaleDateString('sv-SE');
+};
+const tglSingkat = (iso) => new Date(iso + 'T00:00:00').toLocaleDateString('id-ID',
+  { day: 'numeric', month: 'short', year: 'numeric' });
 const nameOf = (id) => (customers.find((c) => c.id === id) || { name: '?' }).name;
 
 function toast(msg, isErr) {
@@ -192,7 +198,7 @@ $('form').addEventListener('submit', (e) => {
 // ============================================================
 // Filter daftar jadwal
 // ============================================================
-let filterMode = 'today'; // 'today' | 'week' | 'all' | 'date'
+let filterMode = 'today'; // 'today' | 'yesterday' | 'tomorrow' | 'day' | 'week' | 'all' | 'date'
 
 function thisWeekRange() { // Senin s.d. Minggu pekan berjalan
   const d = new Date();
@@ -207,6 +213,12 @@ function filteredRows() {
   let rows = appointments.slice();
   if (filterMode === 'today') {
     rows = rows.filter((a) => a.date === today());
+  } else if (filterMode === 'yesterday') {
+    rows = rows.filter((a) => a.date === hariGeser(-1));
+  } else if (filterMode === 'tomorrow') {
+    rows = rows.filter((a) => a.date === hariGeser(1));
+  } else if (filterMode === 'day') {
+    rows = rows.filter((a) => a.date === $('filterDate').value);
   } else if (filterMode === 'week') {
     const [mon, sun] = thisWeekRange();
     rows = rows.filter((a) => a.date >= mon && a.date <= sun);
@@ -219,21 +231,39 @@ function filteredRows() {
 
 function setFilter(mode) {
   filterMode = mode;
-  document.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.dataset.f === mode));
-  const active = mode === 'date';
-  $('filterStart').classList.toggle('active', active);
-  $('filterEnd').classList.toggle('active', active);
-  if (!active) { $('filterStart').value = ''; $('filterEnd').value = ''; }
+  document.querySelectorAll('.chip[data-f]').forEach((c) => c.classList.toggle('active', c.dataset.f === mode));
+  $('pickDateBtn').classList.toggle('active', mode === 'day');
+  if (mode !== 'day') {
+    $('filterDate').value = '';
+    $('pickDateBtn').textContent = '📅 Pilih Tanggal';
+  }
+  const range = mode === 'date';
+  $('filterStart').classList.toggle('active', range);
+  $('filterEnd').classList.toggle('active', range);
+  if (!range) { $('filterStart').value = ''; $('filterEnd').value = ''; }
   renderList();
 }
 
-document.querySelectorAll('.chip').forEach((c) =>
+document.querySelectorAll('.chip[data-f]').forEach((c) =>
   c.addEventListener('click', () => setFilter(c.dataset.f)));
 ['filterStart', 'filterEnd'].forEach((id) =>
   $(id).addEventListener('change', () => {
     if ($('filterStart').value || $('filterEnd').value) setFilter('date');
     else setFilter('today');
   }));
+// Desktop: klik di mana pun pada field langsung buka kalender
+// (di HP picker sudah terbuka sendiri saat field di-tap).
+// Tombol ikut diikat untuk pengguna keyboard (Enter/Spasi).
+['filterDate', 'pickDateBtn'].forEach((id) =>
+  $(id).addEventListener('click', () => {
+    try { $('filterDate').showPicker(); } catch { /* browser lama: fokus saja */ }
+  }));
+$('filterDate').addEventListener('change', () => {
+  const v = $('filterDate').value;
+  if (!v) { setFilter('today'); return; }
+  setFilter('day');
+  $('pickDateBtn').textContent = '📅 ' + tglSingkat(v);
+});
 
 // ============================================================
 // Mode pilih: hapus banyak jadwal sekaligus
@@ -417,6 +447,9 @@ function renderList() {
   }
   if (!rows.length) {
     const msg = filterMode === 'today' ? 'Tidak ada jadwal hari ini.'
+      : filterMode === 'yesterday' ? 'Tidak ada jadwal kemarin.'
+      : filterMode === 'tomorrow' ? 'Tidak ada jadwal besok.'
+      : filterMode === 'day' ? 'Tidak ada jadwal pada tanggal tersebut.'
       : filterMode === 'week' ? 'Tidak ada jadwal minggu ini.'
       : filterMode === 'date' ? 'Tidak ada jadwal pada rentang tanggal tersebut.'
       : 'Belum ada jadwal. Tambahkan lewat form di samping.';
